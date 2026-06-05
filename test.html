@@ -3,13 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terms of Service</title>
+    <title>TikTok Test Platform</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #000000 0%, #2d3436 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: white;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #FE2C55;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #25F4EE;
+            font-size: 1.5rem;
+            margin: 25px 0 15px;
+        }
+
+        p {
+            margin-bottom: 15px;
+            color: #e9ecef;
+            font-size: 1.05rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading h2 {
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .tip {
+            color: #adb5bd;
+            margin-top: 20px;
+            font-size: 0.95rem;
+        }
+
+        .error {
+            color: #FE2C55;
+            margin-top: 20px;
+            font-size: 1.1rem;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+    </style>
 </head>
 <body>
-    <h1>Terms of Service</h1>
-    <p>This application is a non-commercial academic project intended for educational and sandbox testing only.</p>
-    <p>Access to and use of this application is limited to the project developer and authorized test users within the TikTok Developer Sandbox. No commercial use is permitted.</p>
-    <p>This application is provided "as is" without any warranties, express or implied. The developer is not liable for any damages arising from the use of this testing tool.</p>
-    <p>Last updated: 2026-05-26</p>
+    <div class="container">
+        <!-- 授权跳转状态（有code参数时显示） -->
+        <div id="authState" style="display: none;">
+            <div class="loading">
+                <h2>正在完成授权，请稍候...</h2>
+                <p class="tip">正在跳转到本地测试平台...</p>
+                <div id="error" class="error" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- 服务条款内容（无code参数时显示） -->
+        <div id="termsContent">
+            <h1>Terms of Service</h1>
+            
+            <p>This application is a non-commercial academic project intended for educational and sandbox testing only.</p>
+            
+            <p>Access to and use of this application is limited to the project developer and authorized test users within the TikTok Developer Sandbox. No commercial use is permitted.</p>
+            
+            <p>This application is provided "as is" without any warranties, express or implied. The developer is not liable for any damages arising from the use of this testing tool.</p>
+            
+            <h2>Privacy Policy</h2>
+            
+            <p>This application does not collect, store, or share any personal user data outside of the TikTok API authentication process.</p>
+            
+            <p>All authentication tokens are stored locally on the user's device and are only used to communicate with the TikTok Open API.</p>
+            
+            <p>No user data is transmitted to any third-party servers other than TikTok's official API endpoints.</p>
+
+            <div class="footer">
+                Last updated: 2026-06-05
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+            const error = urlParams.get('error');
+
+            // 如果有授权参数，显示跳转状态并自动跳转
+            if (code || error) {
+                document.getElementById('authState').style.display = 'block';
+                document.getElementById('termsContent').style.display = 'none';
+
+                if (error) {
+                    document.getElementById('error').textContent = `授权失败：${error}`;
+                    document.getElementById('error').style.display = 'block';
+                    return;
+                }
+
+                if (!state) {
+                    document.getElementById('error').textContent = '无效的授权链接，缺少state参数';
+                    document.getElementById('error').style.display = 'block';
+                    return;
+                }
+
+                // 自动跳转到本地后端的回调接口
+                setTimeout(() => {
+                    window.location.href = `http://127.0.0.1:8000/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
+                }, 1000);
+            }
+            // 没有授权参数，显示服务条款
+            else {
+                document.getElementById('authState').style.display = 'none';
+                document.getElementById('termsContent').style.display = 'block';
+            }
+        });
+    </script>
 </body>
 </html>
