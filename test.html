@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>TikTok API测试平台 - 授权中心</title>
+    <title>TikTok测试平台 - 授权中心</title>
     <style>
         * {
             margin: 0;
@@ -29,7 +26,7 @@
             border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             padding: 40px;
-            max-width: 600px;
+            max-width: 500px;
             width: 100%;
             text-align: center;
         }
@@ -56,7 +53,7 @@
         
         .subtitle {
             color: #666;
-            margin-bottom: 24px;
+            margin-bottom: 32px;
             font-size: 16px;
         }
         
@@ -71,7 +68,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
         
         .auth-btn:hover {
@@ -85,22 +82,6 @@
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
-        }
-        
-        .manual-btn {
-            background: #666;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            margin-bottom: 24px;
-            width: 100%;
-        }
-        
-        .manual-btn:hover {
-            background: #888;
         }
         
         .status-container {
@@ -129,18 +110,6 @@
             color: #475569;
         }
         
-        .status-debug {
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            color: #92400e;
-            font-family: monospace;
-            font-size: 12px;
-            white-space: pre-wrap;
-            word-break: break-all;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
         .status-title {
             font-weight: 600;
             margin-bottom: 12px;
@@ -154,7 +123,7 @@
         
         .status-item strong {
             display: inline-block;
-            width: 120px;
+            width: 100px;
         }
         
         .footer {
@@ -181,12 +150,6 @@
         <p class="subtitle">授权您的TikTok账号以使用API功能</p>
         
         <button id="authBtn" class="auth-btn" disabled>使用TikTok账号授权</button>
-        <button id="manualBtn" class="manual-btn" style="display: none;">手动处理授权（自动失败时使用）</button>
-        
-        <div id="debugContainer" class="status-container status-debug">
-            <div class="status-title">🔍 调试日志</div>
-            <div id="debugContent"></div>
-        </div>
         
         <div id="statusContainer" class="status-container">
             <div id="statusTitle" class="status-title"></div>
@@ -203,58 +166,36 @@
     </div>
 
     <script>
-        // 后端API地址（必须与后端运行的地址完全一致）
+        // 后端API地址（本地开发用127.0.0.1，部署后改为你的服务器公网IP）
         const API_BASE_URL = "http://127.0.0.1:8001";
-        
-        // 调试日志函数
-        function logDebug(message) {
-            const debugContent = document.getElementById('debugContent');
-            const timestamp = new Date().toLocaleTimeString();
-            debugContent.innerHTML += `[${timestamp}] ${message}\n`;
-            console.log(`[TikTok Auth] ${message}`);
-        }
         
         // 页面加载时执行
         window.addEventListener('load', async () => {
-            logDebug("页面加载完成，开始检查URL参数");
-            
-            // 强制清除GitHub Pages缓存
-            if (window.performance && window.performance.navigation.type === 2) {
-                logDebug("检测到后退导航，强制刷新页面");
-                window.location.reload(true);
-                return;
-            }
-            
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
             const state = urlParams.get('state');
             const error = urlParams.get('error');
             const errorDescription = urlParams.get('error_description');
             
-            logDebug(`URL参数: code=${code ? '存在' : '不存在'}, state=${state ? '存在' : '不存在'}, error=${error || '无'}`);
-            
-            // 显示调试面板
-            document.getElementById('debugContainer').style.display = 'block';
-            
             // 情况1：TikTok授权失败返回错误
             if (error) {
-                logDebug(`授权失败: ${error} - ${errorDescription}`);
                 showStatus('error', '授权被拒绝', `TikTok返回错误：${errorDescription || error}`);
                 document.getElementById('authBtn').disabled = false;
                 document.getElementById('authBtn').textContent = "重新授权";
-                document.getElementById('manualBtn').style.display = 'block';
+                // 清理URL参数，防止刷新重复显示
+                window.history.replaceState({}, document.title, window.location.pathname);
                 return;
             }
             
             // 情况2：TikTok授权成功返回code和state
             if (code && state) {
-                logDebug("检测到授权回调参数，开始自动处理");
                 await handleCallback(code, state);
+                // 处理完成后清理URL参数
+                window.history.replaceState({}, document.title, window.location.pathname);
                 return;
             }
             
             // 情况3：正常访问，显示授权按钮
-            logDebug("未检测到回调参数，显示授权界面");
             document.getElementById('authBtn').disabled = false;
         });
         
@@ -263,75 +204,36 @@
             const btn = document.getElementById('authBtn');
             btn.disabled = true;
             btn.textContent = "正在生成授权链接...";
-            logDebug("用户点击授权按钮，开始生成授权链接");
             
             try {
-                logDebug(`正在请求: ${API_BASE_URL}/auth/generate-url`);
-                const response = await fetch(`${API_BASE_URL}/auth/generate-url`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    credentials: 'include'
-                });
-                
-                logDebug(`响应状态: ${response.status} ${response.statusText}`);
+                const response = await fetch(`${API_BASE_URL}/auth/generate-url`);
                 const data = await response.json();
-                logDebug(`响应数据: ${JSON.stringify(data)}`);
                 
                 if (data.success) {
-                    logDebug(`即将跳转到: ${data.auth_url}`);
+                    // 跳转到TikTok官方授权页面
                     window.location.href = data.auth_url;
                 } else {
                     showStatus('error', '生成授权链接失败', data.message);
                     btn.disabled = false;
                     btn.textContent = "使用TikTok账号授权";
-                    document.getElementById('manualBtn').style.display = 'block';
                 }
             } catch (error) {
-                logDebug(`请求失败: ${error.message}`);
-                showStatus('error', '服务器连接失败', `无法连接到后端服务：${error.message}<br>请确保后端服务已在 ${API_BASE_URL} 运行<br>并已在浏览器中允许混合内容`);
+                showStatus('error', '服务器连接失败', `无法连接到后端服务：${error.message}<br>请确保后端服务已在 ${API_BASE_URL} 运行`);
                 btn.disabled = false;
                 btn.textContent = "使用TikTok账号授权";
-                document.getElementById('manualBtn').style.display = 'block';
-            }
-        });
-        
-        // 手动处理授权按钮
-        document.getElementById('manualBtn').addEventListener('click', async () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
-            const state = urlParams.get('state');
-            
-            if (code && state) {
-                logDebug("用户点击手动处理按钮");
-                await handleCallback(code, state);
-            } else {
-                showStatus('error', '手动处理失败', '未检测到code和state参数，请先完成TikTok授权');
             }
         });
         
         // 处理授权回调
         async function handleCallback(code, state) {
             document.getElementById('authBtn').style.display = 'none';
-            document.getElementById('manualBtn').style.display = 'none';
             showStatus('loading', '正在处理授权...', '正在与TikTok服务器通信，获取访问令牌...');
-            logDebug(`开始处理回调: code=${code.substring(0, 10)}..., state=${state.substring(0, 10)}...`);
             
             try {
-                const url = `${API_BASE_URL}/auth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
-                logDebug(`正在请求: ${url}`);
-                
-                const response = await fetch(url, {
-                    method: 'GET',
-                    mode: 'cors',
-                    credentials: 'include'
-                });
-                
-                logDebug(`响应状态: ${response.status} ${response.statusText}`);
+                const response = await fetch(`${API_BASE_URL}/auth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`);
                 const data = await response.json();
-                logDebug(`响应数据: ${JSON.stringify(data)}`);
                 
                 if (data.success) {
-                    logDebug("授权成功！");
                     showStatus('success', '🎉 授权成功！', `
                         <div class="status-item"><strong>账号名称：</strong>${data.account_name}</div>
                         <div class="status-item"><strong>授权权限：</strong>${data.scope.split(',').join(', ')}</div>
@@ -341,31 +243,17 @@
                             授权信息已保存到服务器配置，您现在可以返回主平台使用API功能
                         </div>
                     `);
-                    
-                    // 清理URL参数
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    logDebug("已清理URL参数");
                 } else {
-                    logDebug(`授权失败: ${data.message}`);
                     showStatus('error', '授权失败', data.message);
                     document.getElementById('authBtn').style.display = 'block';
                     document.getElementById('authBtn').disabled = false;
                     document.getElementById('authBtn').textContent = "重新授权";
-                    document.getElementById('manualBtn').style.display = 'block';
                 }
             } catch (error) {
-                logDebug(`请求失败: ${error.message}`);
-                showStatus('error', '服务器连接失败', `
-                    无法连接到后端服务：${error.message}<br><br>
-                    <strong>可能的解决方案：</strong><br>
-                    1. 确保后端服务已在 ${API_BASE_URL} 运行<br>
-                    2. 在浏览器中允许混合内容（HTTPS调用HTTP）<br>
-                    3. 检查后端CORS配置是否正确
-                `);
+                showStatus('error', '服务器连接失败', `无法连接到后端服务：${error.message}<br>请确保后端服务已在 ${API_BASE_URL} 运行`);
                 document.getElementById('authBtn').style.display = 'block';
                 document.getElementById('authBtn').disabled = false;
                 document.getElementById('authBtn').textContent = "重新授权";
-                document.getElementById('manualBtn').style.display = 'block';
             }
         }
         
