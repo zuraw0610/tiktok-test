@@ -1,156 +1,244 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikTok Test Platform</title>
+    <title>TikTok账号授权中心</title>
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
-
+        
         body {
-            background: linear-gradient(135deg, #000000 0%, #2d3436 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 40px 20px;
-            color: white;
-            line-height: 1.6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
-
+        
         .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 40px;
+            background: white;
+            border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-
-        h1 {
-            color: #FE2C55;
-            font-size: 2.2rem;
-            font-weight: 700;
-            margin-bottom: 30px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
             text-align: center;
         }
-
-        h2 {
-            color: #25F4EE;
-            font-size: 1.5rem;
-            margin: 25px 0 15px;
-        }
-
-        p {
-            margin-bottom: 15px;
-            color: #e9ecef;
-            font-size: 1.05rem;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 60px 20px;
-        }
-
-        .loading h2 {
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: #000;
+            border-radius: 50%;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
-            margin-bottom: 20px;
+            font-size: 32px;
+            font-weight: bold;
         }
-
-        .tip {
-            color: #adb5bd;
-            margin-top: 20px;
-            font-size: 0.95rem;
+        
+        h1 {
+            font-size: 28px;
+            color: #1a1a1a;
+            margin-bottom: 8px;
         }
-
-        .error {
-            color: #FE2C55;
-            margin-top: 20px;
-            font-size: 1.1rem;
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 32px;
+            font-size: 16px;
         }
-
+        
+        .auth-btn {
+            background: #000;
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 24px;
+        }
+        
+        .auth-btn:hover {
+            background: #333;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .auth-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .status-container {
+            margin-top: 24px;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: left;
+            display: none;
+        }
+        
+        .status-success {
+            background: #f0fdf4;
+            border: 1px solid #22c55e;
+            color: #166534;
+        }
+        
+        .status-error {
+            background: #fef2f2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+        }
+        
+        .status-loading {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+        }
+        
+        .status-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+        
+        .status-item {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .status-item strong {
+            display: inline-block;
+            width: 100px;
+        }
+        
         .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-            color: #6c757d;
-            font-size: 0.9rem;
+            margin-top: 32px;
+            color: #999;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- 授权跳转状态（有code参数时显示） -->
-        <div id="authState" style="display: none;">
-            <div class="loading">
-                <h2>正在完成授权，请稍候...</h2>
-                <p class="tip">正在跳转到本地测试平台...</p>
-                <div id="error" class="error" style="display: none;"></div>
-            </div>
+        <div class="logo">🎵</div>
+        <h1>TikTok测试平台授权</h1>
+        <p class="subtitle">授权后即可使用TikTok API进行视频管理</p>
+        
+        <button id="authBtn" class="auth-btn">使用TikTok账号登录</button>
+        
+        <div id="statusContainer" class="status-container">
+            <div id="statusTitle" class="status-title"></div>
+            <div id="statusContent"></div>
         </div>
-
-        <!-- 服务条款内容（无code参数时显示） -->
-        <div id="termsContent">
-            <h1>Terms of Service</h1>
-            
-            <p>This application is a non-commercial academic project intended for educational and sandbox testing only.</p>
-            
-            <p>Access to and use of this application is limited to the project developer and authorized test users within the TikTok Developer Sandbox. No commercial use is permitted.</p>
-            
-            <p>This application is provided "as is" without any warranties, express or implied. The developer is not liable for any damages arising from the use of this testing tool.</p>
-            
-            <h2>Privacy Policy</h2>
-            
-            <p>This application does not collect, store, or share any personal user data outside of the TikTok API authentication process.</p>
-            
-            <p>All authentication tokens are stored locally on the user's device and are only used to communicate with the TikTok Open API.</p>
-            
-            <p>No user data is transmitted to any third-party servers other than TikTok's official API endpoints.</p>
-
-            <div class="footer">
-                Last updated: 2026-06-05
-            </div>
+        
+        <div class="footer">
+            TikTok测试平台 - 仅用于开发测试用途
         </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        // 后端API地址（本地开发时使用，部署后替换为你的服务器地址）
+        const API_BASE_URL = "http://127.0.0.1:8001";
+        
+        // 页面加载时检查URL参数
+        window.addEventListener('load', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
             const state = urlParams.get('state');
-            const error = urlParams.get('error');
-
-            // 如果有授权参数，显示跳转状态并自动跳转
-            if (code || error) {
-                document.getElementById('authState').style.display = 'block';
-                document.getElementById('termsContent').style.display = 'none';
-
-                if (error) {
-                    document.getElementById('error').textContent = `授权失败：${error}`;
-                    document.getElementById('error').style.display = 'block';
-                    return;
-                }
-
-                if (!state) {
-                    document.getElementById('error').textContent = '无效的授权链接，缺少state参数';
-                    document.getElementById('error').style.display = 'block';
-                    return;
-                }
-
-                // 自动跳转到本地后端的回调接口
-                setTimeout(() => {
-                    window.location.href = `http://127.0.0.1:8000/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
-                }, 1000);
-            }
-            // 没有授权参数，显示服务条款
-            else {
-                document.getElementById('authState').style.display = 'none';
-                document.getElementById('termsContent').style.display = 'block';
+            
+            if (code && state) {
+                // 处理授权回调
+                await handleCallback(code, state);
+            } else {
+                // 显示正常授权界面
+                document.getElementById('authBtn').disabled = false;
             }
         });
+        
+        // 点击授权按钮
+        document.getElementById('authBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('authBtn');
+            btn.disabled = true;
+            btn.textContent = "正在生成授权链接...";
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/generate-url`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 跳转到TikTok授权页面
+                    window.location.href = data.auth_url;
+                } else {
+                    showStatus('error', '生成授权链接失败', data.message);
+                    btn.disabled = false;
+                    btn.textContent = "使用TikTok账号登录";
+                }
+            } catch (error) {
+                showStatus('error', '网络错误', `无法连接到服务器：${error.message}`);
+                btn.disabled = false;
+                btn.textContent = "使用TikTok账号登录";
+            }
+        });
+        
+        // 处理授权回调
+        async function handleCallback(code, state) {
+            document.getElementById('authBtn').style.display = 'none';
+            showStatus('loading', '正在处理授权...', '请稍候，正在获取访问令牌...');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('success', '授权成功！', `
+                        <div class="status-item"><strong>账号名称：</strong>${data.account_name}</div>
+                        <div class="status-item"><strong>权限范围：</strong>${data.scope}</div>
+                        <div class="status-item"><strong>有效期：</strong>${Math.round(data.expires_in / 3600)} 小时</div>
+                        <div class="status-item"><strong>日志文件：</strong>${data.log_file}</div>
+                        <div class="status-item" style="margin-top: 16px; color: #166534; font-weight: 500;">
+                            您现在可以返回测试平台使用该账号进行操作
+                        </div>
+                    `);
+                } else {
+                    showStatus('error', '授权失败', data.message);
+                    document.getElementById('authBtn').style.display = 'block';
+                    document.getElementById('authBtn').disabled = false;
+                    document.getElementById('authBtn').textContent = "重新授权";
+                }
+            } catch (error) {
+                showStatus('error', '网络错误', `无法连接到服务器：${error.message}`);
+                document.getElementById('authBtn').style.display = 'block';
+                document.getElementById('authBtn').disabled = false;
+                document.getElementById('authBtn').textContent = "重新授权";
+            }
+        }
+        
+        // 显示状态信息
+        function showStatus(type, title, content) {
+            const container = document.getElementById('statusContainer');
+            const titleEl = document.getElementById('statusTitle');
+            const contentEl = document.getElementById('statusContent');
+            
+            container.className = `status-container status-${type}`;
+            titleEl.textContent = title;
+            contentEl.innerHTML = content;
+            container.style.display = 'block';
+        }
     </script>
 </body>
 </html>
